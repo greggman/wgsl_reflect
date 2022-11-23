@@ -5,6 +5,10 @@ export declare type SizeAlign = {
 
 // opaque type
 export declare interface AST {
+  name?: string;
+  format?: {
+    name?: string;
+  };
 };
 
 export declare type Member = {
@@ -13,6 +17,11 @@ export declare type Member = {
   size: number;
   type: AST;
   member: AST;
+  isStruct?: boolean;
+  isArray: boolean;
+  arrayCount: number;
+  structSize?: number,
+  members?: Member[];
 };
 
 export declare type StructInfo = {
