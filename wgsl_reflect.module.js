@@ -3195,7 +3195,7 @@ class WgslReflect {
                 }
             }
         });
-        return resources;
+        return [...new Map(resources.map(r => [r.name, r])).values()];
     }
     getBindGroups() {
         const groups = [];
