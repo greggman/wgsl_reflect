@@ -180,6 +180,7 @@ export class TokenTypes {
     return: new TokenType("return", TokenClass.keyword, "return"),
     requires: new TokenType("requires", TokenClass.keyword, "requires"),
     storage: new TokenType("storage", TokenClass.keyword, "storage"),
+    immediate: new TokenType("immediate", TokenClass.keyword, "immediate"),
     switch: new TokenType("switch", TokenClass.keyword, "switch"),
     true: new TokenType("true", TokenClass.keyword, "true"),
     alias: new TokenType("alias", TokenClass.keyword, "alias"),
@@ -412,6 +413,7 @@ export class TokenTypes {
     this.keywords.workgroup,
     this.keywords.uniform,
     this.keywords.storage,
+    this.keywords.immediate,
   ];
 
   static readonly access_mode = [

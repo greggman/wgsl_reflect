@@ -1705,8 +1705,9 @@ export class WgslParser {
     let access: string = "";
     if (this._match(TokenTypes.tokens.less_than)) {
       storage = this._consume(TokenTypes.storage_class, "Expected storage_class.").toString();
-      if (this._match(TokenTypes.tokens.comma))
+      if (this._match(TokenTypes.tokens.comma)) {
         access = this._consume(TokenTypes.access_mode, "Expected access_mode.").toString();
+      }
       this._consume(TokenTypes.tokens.greater_than, "Expected '>'.");
     }
 
