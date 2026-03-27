@@ -10,13 +10,15 @@
     "allowUnusedLabels": true,
     "noImplicitAny": false,
     "noImplicitReturns": true,
+    "strictNullChecks": false,
     "noFallthroughCasesInSwitch": false,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "inlineSources": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "declaration": true,
-    "declarationDir": "./types"
+    "declarationDir": "./types",
+    "rootDir": "./src/"
   },
   "exclude": ["node_modules"],
   "files": [

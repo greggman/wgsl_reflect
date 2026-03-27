@@ -103,6 +103,7 @@ export declare class TokenTypes {
         return: TokenType;
         requires: TokenType;
         storage: TokenType;
+        immediate: TokenType;
         switch: TokenType;
         true: TokenType;
         alias: TokenType;
