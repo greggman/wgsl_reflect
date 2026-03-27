@@ -15,7 +15,7 @@ export declare class WgslParser {
     _forwardType(t: AST.Type | null): AST.Type | null;
     _initialize(tokensOrCode: Token[] | string): void;
     _updateNode<T extends AST.Node>(n: T, l?: number): T;
-    _error(token: Token, message: string | null): Object;
+    _error(token: Token, message: string | null): Error;
     _isAtEnd(): boolean;
     _match(types: TokenType | TokenType[]): boolean;
     _consume(types: TokenType | TokenType[], message: string | null): Token;

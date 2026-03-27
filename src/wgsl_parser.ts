@@ -14,7 +14,7 @@ export class WgslParser {
   _currentLoop: AST.Statement[] = [];
   _context = new ParseContext();
   _exec = new WgslExec();
-  _forwardTypeCount: number = 0;;
+  _forwardTypeCount: number = 0;
 
   parse(tokensOrCode: Token[] | string): AST.Statement[] {
     this._initialize(tokensOrCode);
@@ -93,7 +93,7 @@ export class WgslParser {
 
   _initialize(tokensOrCode: Token[] | string) {
     if (tokensOrCode) {
-      if (typeof tokensOrCode == "string") {
+      if (typeof tokensOrCode === "string") {
         const scanner = new WgslScanner(tokensOrCode);
         this._tokens = scanner.scanTokens();
       } else {
@@ -110,20 +110,14 @@ export class WgslParser {
     return n;
   }
 
-  _error(token: Token, message: string | null): Object {
-    return {
-      token,
-      message,
-      toString: function () {
-        return `${message}`;
-      },
-    };
+  _error(token: Token, message: string | null): Error {
+    return new Error(`${message}. Line: ${token.line}`);
   }
 
   _isAtEnd(): boolean {
     return (
       this._current >= this._tokens.length ||
-      this._peek().type == TokenTypes.eof
+      this._peek().type === TokenTypes.eof
     );
   }
 
@@ -151,7 +145,7 @@ export class WgslParser {
     if (this._check(types)) {
       return this._advance();
     }
-    throw this._error(this._peek(), `${message}. Line:${this._currentLine}`);
+    throw this._error(this._peek(), message);
   }
 
   _check(types: TokenType | TokenType[]): boolean {
@@ -159,7 +153,7 @@ export class WgslParser {
       return false;
     }
     const tk = this._peek();
-    if (types instanceof Array) {
+    if (Array.isArray(types)) {
       const t = tk.type;
       let hasNameType = false;
       for (const type of types) {
@@ -171,9 +165,8 @@ export class WgslParser {
         }
       }
       if (hasNameType) {
-        // ident can include any of the other keywords, so special case it.
         const match = (TokenTypes.tokens.name.rule as RegExp).exec(tk.lexeme);
-        if (match && match.index == 0 && match[0] == tk.lexeme) {
+        if (match && match.index === 0 && match[0] === tk.lexeme) {
           return true;
         }
       }
@@ -184,10 +177,9 @@ export class WgslParser {
       return true;
     }
 
-    // ident can include any of the other keywords, so special case it.
     if (types === TokenTypes.tokens.name) {
       const match = (TokenTypes.tokens.name.rule as RegExp).exec(tk.lexeme);
-      return match && match.index == 0 && match[0] == tk.lexeme;
+      return match && match.index === 0 && match[0] === tk.lexeme;
     }
 
     return false;
@@ -485,7 +477,7 @@ export class WgslParser {
         continueStmt.loopId = loop.id;
       } else {
         // This continue statement is not inside a loop.
-        throw this._error(this._peek(), `Continue statement must be inside a loop. Line: ${continueStmt.line}`);
+        throw this._error(this._peek(), `Continue statement must be inside a loop`);
       }
       result = continueStmt;
     } else {
@@ -675,7 +667,7 @@ export class WgslParser {
     const savedPos = this._current;
 
     const _var = this._unary_expression();
-    if (_var == null) {
+    if (_var === null) {
       return null;
     }
 
@@ -710,7 +702,7 @@ export class WgslParser {
       _var = this._unary_expression();
     }
 
-    if (!isUnderscore && _var == null) {
+    if (!isUnderscore && _var === null) {
       return null;
     }
 
@@ -811,7 +803,7 @@ export class WgslParser {
 
     this._consume(TokenTypes.tokens.brace_left, "Expected '{' for switch.");
     switchStmt.cases = this._switch_body();
-    if (switchStmt.cases == null || switchStmt.cases.length == 0) {
+    if (switchStmt.cases === null || switchStmt.cases.length === 0) {
       throw this._error(this._previous(), "Expected 'case' or 'default'.");
     }
     this._consume(TokenTypes.tokens.brace_right, "Expected '}' for switch.");
@@ -911,16 +903,16 @@ export class WgslParser {
     }
 
     let statement = this._statement();
-    if (statement == null) {
+    if (statement === null) {
       return [];
     }
 
-    if (!(statement instanceof Array)) {
+    if (!Array.isArray(statement)) {
       statement = [statement];
     }
 
     const nextStatement = this._case_body();
-    if (nextStatement.length == 0) {
+    if (nextStatement.length === 0) {
       return statement;
     }
 
@@ -1352,11 +1344,11 @@ export class WgslParser {
   _validateTypeRange(value: number, type: AST.Type) {
     if (type.name === "i32") {
       if (value < -2147483648 || value > 2147483647) {
-        throw this._error(this._previous(), `Value out of range for i32: ${value}. Line: ${this._currentLine}.`);
+        throw this._error(this._previous(), `Value out of range for i32: ${value}`);
       }
     } else if (type.name === "u32") {
       if (value < 0 || value > 4294967295) {
-        throw this._error(this._previous(), `Value out of range for u32: ${value}. Line: ${this._currentLine}.`);
+        throw this._error(this._previous(), `Value out of range for u32: ${value}`);
       }
     }
   }
@@ -1531,7 +1523,7 @@ export class WgslParser {
         const t1 = _var.type.getTypeName();
         const t2 = _var.value.type.getTypeName();
         if (t1 !== t2) {
-          throw this._error(this._peek(), `Invalid cast from ${_var.value.type.name} to ${_var.type.name}. Line:${this._currentLine}`);
+          throw this._error(this._peek(), `Invalid cast from ${_var.value.type.name} to ${_var.type.name}`);
         }
       }
       if (_var.value.isScalar) {
@@ -1604,7 +1596,7 @@ export class WgslParser {
         } else if (constValue.typeInfo.format.name === "bool") {
           type[0].format = AST.Type.bool;
         } else {
-          console.error(`TODO: impelement template format type ${constValue.typeInfo.format.name}`);
+          console.error(`TODO: implement template format type ${constValue.typeInfo.format.name}`);
         }
       }
 
@@ -1619,7 +1611,7 @@ export class WgslParser {
         const t1 = type.getTypeName();
         const t2 = value.type.getTypeName();
         if (t1 !== t2) {
-          throw this._error(this._peek(), `Invalid cast from ${value.type.name} to ${type.name}. Line:${this._currentLine}`);
+          throw this._error(this._peek(), `Invalid cast from ${value.type.name} to ${type.name}`);
         }
       }
       value.type = type;
@@ -1670,7 +1662,7 @@ export class WgslParser {
         const t1 = type.getTypeName();
         const t2 = value.type.getTypeName();
         if (t1 !== t2) {
-          throw this._error(this._peek(), `Invalid cast from ${value.type.name} to ${type.name}. Line:${this._currentLine}`);
+          throw this._error(this._peek(), `Invalid cast from ${value.type.name} to ${type.name}`);
         }
       }
       value.type = type;
@@ -1995,7 +1987,7 @@ export class WgslParser {
           this._advance();
           do {
             const v = this._consume(TokenTypes.literal_or_ident, "Expected attribute value").toString();
-            if (!(attr.value instanceof Array)) {
+            if (!Array.isArray(attr.value)) {
               attr.value = [attr.value as string];
             }
             attr.value.push(v);
@@ -2006,7 +1998,7 @@ export class WgslParser {
       attributes.push(attr);
     }
 
-    if (attributes.length == 0) {
+    if (attributes.length === 0) {
       return null;
     }
 
