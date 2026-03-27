@@ -52,22 +52,21 @@ export class Node {
   }
 
   constEvaluateString(context: WgslExec): string {
-    return this.constEvaluate(context).toString();
-  } 
+    return this.constEvaluate(context)?.toString() ?? "";
+  }
 }
 
 // For internal use only
 export class _BlockStart extends Node {
-  static instance = new _BlockStart();
+  static readonly instance = new _BlockStart();
 }
 
- // For internal use only
+// For internal use only
 export class _BlockEnd extends Node {
-  static instance = new _BlockEnd();
+  static readonly instance = new _BlockEnd();
 }
 
 const BuiltinFunctionNames = new Set([
-  "all",
   "all",
   "any",
   "select",
@@ -221,9 +220,6 @@ const BuiltinFunctionNames = new Set([
  * @category AST
  */
 export class Statement extends Node {
-  constructor() {
-    super();
-  }
 }
 
 /**
@@ -536,7 +532,7 @@ export enum IncrementOperator {
 export namespace IncrementOperator {
   export function parse(val: string): IncrementOperator {
     const key = val as keyof typeof IncrementOperator;
-    if (key == "parse") throw new Error("Invalid value for IncrementOperator");
+    if (key === "parse") throw new Error("Invalid value for IncrementOperator");
     return IncrementOperator[key];
   }
 }
@@ -568,7 +564,7 @@ export class Increment extends Statement {
 export enum AssignOperator {
   assign = "=",
   addAssign = "+=",
-  subtractAssin = "-=",
+  subtractAssign = "-=",
   multiplyAssign = "*=",
   divideAssign = "/=",
   moduloAssign = "%=",
@@ -582,7 +578,7 @@ export enum AssignOperator {
 export namespace AssignOperator {
   export function parse(val: string): AssignOperator {
     const key = val as keyof typeof AssignOperator;
-    if (key == "parse") {
+    if (key === "parse") {
       throw new Error("Invalid value for AssignOperator");
     }
     //return AssignOperator[key];
@@ -844,10 +840,6 @@ export class Alias extends Statement {
  * @category AST
  */
 export class Discard extends Statement {
-  constructor() {
-    super();
-  }
-
   get astNodeType(): string {
     return "discard";
   }
@@ -860,11 +852,7 @@ export class Discard extends Statement {
  */
 export class Break extends Statement {
   condition: Expression | null = null;
-  loopId: number = -1;
-
-  constructor() {
-    super();
-  }
+  loopId = -1;
 
   get astNodeType(): string {
     return "break";
@@ -877,11 +865,7 @@ export class Break extends Statement {
  * @category AST
  */
 export class Continue extends Statement {
-  loopId: number = -1;
-
-  constructor() {
-    super();
-  }
+  loopId = -1;
 
   get astNodeType(): string {
     return "continue";
@@ -989,7 +973,7 @@ export class Struct extends Type {
   /// Return the index of the member with the given name, or -1 if not found.
   getMemberIndex(name: string): number {
     for (let i = 0; i < this.members.length; i++) {
-      if (this.members[i].name == name) return i;
+      if (this.members[i].name === name) return i;
     }
     return -1;
   }
@@ -1277,7 +1261,7 @@ export class CreateExpr extends Expression {
 export class CallExpr extends Expression {
   name: string;
   args: Expression[] | null;
-  cachedReturnValue: any = null;
+  cachedReturnValue: unknown = null;
 
   constructor(name: string, args: Expression[] | null) {
     super();
@@ -1358,14 +1342,11 @@ export class ConstExpr extends Expression {
   }
 
   constEvaluate(context: WgslExec, type?: Type[]): Data | null {
-    if (this.initializer) {
-      const data = context.evalExpression(this.initializer, context.context);
-      if (data !== null && this.postfix) {
-        return data.getSubData(context, this.postfix, context.context);
-      }
-      return data;
+    const data = context.evalExpression(this.initializer, context.context);
+    if (data !== null && this.postfix) {
+      return data.getSubData(context, this.postfix, context.context);
     }
-    return null;
+    return data;
   }
 
   search(callback: (node: Node) => void): void {
@@ -1601,10 +1582,6 @@ export class SwitchCase extends Node {
 }
 
 export class DefaultSelector extends Expression {
-  constructor() {
-    super();
-  }
-
   get astNodeType(): string {
     return "default";
   }
@@ -1746,7 +1723,7 @@ export class Attribute extends Node {
 
 
 
-export class Data {
+export abstract class Data {
   static _id = 0;
 
   typeInfo: TypeInfo;
@@ -1759,9 +1736,7 @@ export class Data {
       this.id = Data._id++;
   }
 
-  clone(): Data {
-    throw `Clone: Not implemented for ${this.constructor.name}`;
-  }
+  abstract clone(): Data;
 
   setDataValue(exec: ExecInterface, value: Data, postfix: Expression | null, context: ExecContext): void {
       console.error(`SetDataValue: Not implemented for ${this.constructor.name}`);
@@ -1782,7 +1757,11 @@ export class VoidData extends Data {
       super(new TypeInfo("void", null), null);
   }
 
-  static void = new VoidData();
+  static readonly void = new VoidData();
+
+  clone(): Data {
+    return this;
+  }
 
   toString(): string {
       return "void";
@@ -1853,7 +1832,7 @@ export class ScalarData extends Data {
     } else if (this.data instanceof Uint32Array) {
         return new ScalarData(new Uint32Array(this.data), this.typeInfo, null);
     }
-    throw `ScalarData: Invalid data type`;
+    throw new Error(`ScalarData: Invalid data type`);
   }
 
   get value(): number {
@@ -1985,7 +1964,7 @@ export class VectorData extends Data {
     } else if (this.data instanceof Uint32Array) {
       return new VectorData(new Uint32Array(this.data), this.typeInfo, null);
     }
-    throw `VectorData: Invalid data type`;
+    throw new Error(`VectorData: Invalid data type`);
   }
 
   setDataValue(exec: ExecInterface, value: Data, postfix: Expression | null, context: ExecContext): void {
@@ -2064,7 +2043,7 @@ export class VectorData extends Data {
           return new ScalarData(d, format!);
         }
 
-        throw `GetSubData: Invalid data type`;
+        throw new Error(`GetSubData: Invalid data type`);
       } else if (postfix instanceof StringExpr) {
         const member = postfix.value.toLowerCase();
         if (member.length === 1) {

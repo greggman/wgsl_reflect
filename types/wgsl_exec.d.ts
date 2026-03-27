@@ -1,5 +1,5 @@
 import { Node, Type, Let, Var, Const, If, For, While, Loop, Assign, Increment, Override, Call, BinaryOperator, LiteralExpr, VariableExpr, CallExpr, CreateExpr, ConstExpr, BitcastExpr, UnaryOperator, Function, Switch } from "./wgsl_ast.js";
-import { Data } from "./wgsl_ast.js";
+import { Data, ScalarData } from "./wgsl_ast.js";
 import { Reflect } from "./reflect/reflect.js";
 import { TypeInfo } from "./reflect/info.js";
 import { ExecContext, FunctionRef } from "./exec/exec_context.js";
@@ -15,8 +15,8 @@ export declare class WgslExec extends ExecInterface {
     getVariableValue(name: string): number | number[] | null;
     execute(config?: Object): void;
     dispatchWorkgroups(kernel: string, dispatchCount: number | number[], bindGroups: Object, config?: Object): void;
-    static _breakObj: Data;
-    static _continueObj: Data;
+    static _breakObj: ScalarData;
+    static _continueObj: ScalarData;
     execStatement(stmt: Node, context: ExecContext): Data | null;
     evalExpression(node: Node, context: ExecContext): Data | null;
     getTypeInfo(type: Type | string): TypeInfo | null;

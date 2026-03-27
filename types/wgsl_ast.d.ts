@@ -20,10 +20,10 @@ export declare class Node {
     constEvaluateString(context: WgslExec): string;
 }
 export declare class _BlockStart extends Node {
-    static instance: _BlockStart;
+    static readonly instance: _BlockStart;
 }
 export declare class _BlockEnd extends Node {
-    static instance: _BlockEnd;
+    static readonly instance: _BlockEnd;
 }
 /**
  * @class Statement
@@ -31,7 +31,6 @@ export declare class _BlockEnd extends Node {
  * @category AST
  */
 export declare class Statement extends Node {
-    constructor();
 }
 /**
  * @class Function
@@ -185,7 +184,7 @@ export declare class Increment extends Statement {
 export declare enum AssignOperator {
     assign = "=",
     addAssign = "+=",
-    subtractAssin = "-=",
+    subtractAssign = "-=",
     multiplyAssign = "*=",
     divideAssign = "/=",
     moduloAssign = "%=",
@@ -321,7 +320,6 @@ export declare class Alias extends Statement {
  * @category AST
  */
 export declare class Discard extends Statement {
-    constructor();
     get astNodeType(): string;
 }
 /**
@@ -332,7 +330,6 @@ export declare class Discard extends Statement {
 export declare class Break extends Statement {
     condition: Expression | null;
     loopId: number;
-    constructor();
     get astNodeType(): string;
 }
 /**
@@ -342,7 +339,6 @@ export declare class Break extends Statement {
  */
 export declare class Continue extends Statement {
     loopId: number;
-    constructor();
     get astNodeType(): string;
 }
 /**
@@ -534,7 +530,7 @@ export declare class CreateExpr extends Expression {
 export declare class CallExpr extends Expression {
     name: string;
     args: Expression[] | null;
-    cachedReturnValue: any;
+    cachedReturnValue: unknown;
     constructor(name: string, args: Expression[] | null);
     get astNodeType(): string;
     setCachedReturnValue(value: any): void;
@@ -667,7 +663,6 @@ export declare class SwitchCase extends Node {
     search(callback: (node: Node) => void): void;
 }
 export declare class DefaultSelector extends Expression {
-    constructor();
     get astNodeType(): string;
 }
 /**
@@ -738,20 +733,21 @@ export declare class Attribute extends Node {
     constructor(name: string, value: string | string[] | null);
     get astNodeType(): string;
 }
-export declare class Data {
+export declare abstract class Data {
     static _id: number;
     typeInfo: TypeInfo;
     parent: Data | null;
     id: number;
     constructor(typeInfo: TypeInfo, parent: Data | null);
-    clone(): Data;
+    abstract clone(): Data;
     setDataValue(exec: ExecInterface, value: Data, postfix: Expression | null, context: ExecContext): void;
     getSubData(exec: ExecInterface, postfix: Expression | null, context: ExecContext): Data | null;
     toString(): string;
 }
 export declare class VoidData extends Data {
     constructor();
-    static void: VoidData;
+    static readonly void: VoidData;
+    clone(): Data;
     toString(): string;
 }
 export declare class PointerData extends Data {

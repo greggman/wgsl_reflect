@@ -192,8 +192,8 @@ export class WgslExec extends ExecInterface {
         }
     }
 
-    static _breakObj = new Data(new TypeInfo("BREAK", null), null);
-    static _continueObj = new Data(new TypeInfo("CONTINUE", null), null);
+    static _breakObj = new ScalarData(0, new TypeInfo("BREAK", null), null);
+    static _continueObj = new ScalarData(0, new TypeInfo("CONTINUE", null), null);
 
     execStatement(stmt: Node, context: ExecContext): Data | null {
         if (stmt instanceof Return) {
@@ -2025,7 +2025,7 @@ export class WgslExec extends ExecInterface {
 
     _evalCall(node: CallExpr, context: ExecContext): Data | null {
         if (node.cachedReturnValue !== null) {
-            return node.cachedReturnValue;
+            return node.cachedReturnValue as Data;
         }
 
         const subContext = context.clone();
