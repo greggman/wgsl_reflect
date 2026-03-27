@@ -196,6 +196,7 @@ export class TemplateInfo extends TypeInfo {
 export enum ResourceType {
   Uniform,
   Storage,
+  Immediate,
   Texture,
   Sampler,
   StorageTexture,

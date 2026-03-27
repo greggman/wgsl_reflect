@@ -447,6 +447,29 @@ let out_of_range = (0x1ffffffff / 8u); // u32 - 20
       ]);
     });
 
+    await test("@group(0) binding(0) var<immediate> pbuf: PositionsBuffer;", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(
+        "@group(0) @binding(0) var<immediate> pbuf: PositionsBuffer;"
+      );
+      test.validateObject(t, [
+        {
+          astNodeType: "var",
+          name: "pbuf",
+          attributes: [
+            {
+              name: "group",
+              value: "0",
+            },
+            {
+              name: "binding",
+              value: "0",
+            },
+          ],
+        },
+      ]);
+    });
+
     // let
     await test("let golden: f32 = 1.61803398875;", async function (test) {
       const parser = new WgslParser();

@@ -36,6 +36,8 @@ export class Reflect {
   uniforms: VariableInfo[] = [];
   /// All top-level storage vars in the shader.
   storage: VariableInfo[] = [];
+  /// All top-level immediate buffer vars in the shader.
+  immediates: VariableInfo[] = [];
   /// All top-level texture vars in the shader;
   textures: VariableInfo[] = [];
   // All top-level sampler vars in the shader.
@@ -103,6 +105,19 @@ export class Reflect {
           varInfo.access = "read";
         }
         this.uniforms.push(varInfo);
+        continue;
+      }
+
+      if (this._isImmediateVar(node)) {
+        const v = node as Var;
+        const g = this._getAttributeNum(v.attributes, "group", 0);
+        const b = this._getAttributeNum(v.attributes, "binding", 0);
+        const type = this.getTypeInfo(v.type!, v.attributes);
+        const varInfo = new VariableInfo(v.name, type, g, b, v.attributes, ResourceType.Immediate, v.access);
+        if (!varInfo.access) {
+          varInfo.access = "read";
+        }
+        this.immediates.push(varInfo);
         continue;
       }
 
@@ -911,6 +926,10 @@ export class Reflect {
 
   _isUniformVar(node: Node): boolean {
     return node instanceof Var && node.storage == "uniform";
+  }
+
+  _isImmediateVar(node: Node): boolean {
+    return node instanceof Var && node.storage == "immediate";
   }
 
   _isStorageVar(node: Node): boolean {

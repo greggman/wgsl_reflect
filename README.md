@@ -31,6 +31,8 @@ class WgslReflect {
   uniforms: Array<VariableInfo>;
   // All top-level storage vars in the shader, including storage buffers and textures.
   storage: Array<VariableInfo>;
+  /// All top-level immediate buffer vars in the shader.
+  immediates: VariableInfo[] = [];
   // All top-level texture vars in the shader;
   textures: Array<VariableInfo>;
   // All top-level sampler vars in the shader.
@@ -72,6 +74,7 @@ class WgslReflect {
 enum ResourceType {
   Uniform, // Uniform buffer
   Storage, // Storage buffer
+  Immediate, // Immediate buffer
   Texture, // Texture
   Sampler, // Sampler to sample a Texture
   StorageTexture // StorageTexture

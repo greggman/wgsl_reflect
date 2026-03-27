@@ -15,6 +15,7 @@ declare class _TypeSize {
 export declare class Reflect {
     uniforms: VariableInfo[];
     storage: VariableInfo[];
+    immediates: VariableInfo[];
     textures: VariableInfo[];
     samplers: VariableInfo[];
     aliases: AliasInfo[];
@@ -52,6 +53,7 @@ export declare class Reflect {
     _updateStructInfo(struct: StructInfo): void;
     _getTypeSize(type: TypeInfo | MemberInfo | null | undefined): _TypeSize | null;
     _isUniformVar(node: Node): boolean;
+    _isImmediateVar(node: Node): boolean;
     _isStorageVar(node: Node): boolean;
     _isTextureVar(node: Node): boolean;
     _isSamplerVar(node: Node): boolean;

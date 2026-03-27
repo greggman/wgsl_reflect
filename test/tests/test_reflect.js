@@ -328,14 +328,14 @@ export async function run() {
           pos : vec2<f32>,
           vel : vec2<f32>,
         }
-        
+
         struct Particles {
           particles : array<Particle>,
         }
-        
+
         @binding(0) @group(0) var<storage, read> particlesA: Particles;
         @binding(1) @group(0) var<storage, read_write> particlesB : Particles;
-        
+
         @compute @workgroup_size(64)
         fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
           var index = GlobalInvocationID.x;
@@ -476,25 +476,25 @@ export async function run() {
         struct ViewUniforms {
             viewProjection: mat4x4<f32>
         };
-        
+
         struct ModelUniforms {
             model: mat4x4<f32>,
             color: vec4<f32>,
             intensity: f32
         };
-        
+
         @binding(0) @group(0) var<uniform> viewUniforms: ViewUniforms;
         @binding(1) @group(0) var<uniform> modelUniforms: ModelUniforms;
         @binding(0) @group(1) var u_sampler: sampler;
         @binding(1) @group(1) var u_texture: texture_2d<f32>;
-        
+
         struct VertexInput {
             @builtin(position) a_position: vec3<f32>,
             @location(1) a_normal: vec3<f32>,
             @location(2) a_color: vec4<f32>,
             @location(3) a_uv: vec2<f32>
         };
-        
+
         struct VertexOutput {
             @builtin(position) Position: vec4<f32>,
             @location(0) v_position: vec4<f32>,
@@ -502,7 +502,7 @@ export async function run() {
             @location(2) v_color: vec4<f32>,
             @location(3) v_uv: vec2<f32>,
         };
-        
+
         @vertex
         fn vertex_main(input: VertexInput) -> VertexOutput {
             var output: VertexOutput;
@@ -513,16 +513,16 @@ export async function run() {
             output.v_uv = input.a_uv;
             return output;
         }
-        
+
         @fragment
         fn frag_main() {}
-        
+
         @compute @workgroup_size(8,4,1)
         fn sorter() { }
-        
+
         @compute @workgroup_size(8u)
         fn reverser() { }
-        
+
         // Using an pipeline-overridable constant.
         @id(42) override block_width = 12u;
         @compute @workgroup_size(block_width)
@@ -576,7 +576,7 @@ export async function run() {
             w: vec2<f32>,                              // offset(8)   align(8)  size(8)
             @size(16) x: f32                          // offset(16)  align(4)  size(16)
         }
-        
+
         struct B {                                     //             align(16) size(208)
             a: vec2<f32>,                              // offset(0)   align(8)  size(8)
             // -- implicit member alignment padding -- // offset(8)             size(8)
@@ -591,7 +591,7 @@ export async function run() {
             h: i32,                                    // offset(192) align(4)  size(4)
             // -- implicit struct size padding --      // offset(196)           size(12)
         }
-        
+
         @group(0) @binding(0)
         var<uniform> uniform_buffer: B;`);
       test.equals(reflect.uniforms[0].size, 208);
@@ -703,6 +703,26 @@ export async function run() {
       test.equals(reflect.storage[0].type.format.isStruct, true);
       test.equals(reflect.storage[0].type.format.members.length, 2);
       test.equals(reflect.storage[0].type.size, 80);
+    });
+
+    await test("nested-alias-array immediate", function (test) {
+      const shader = `
+          struct Foo {
+            a: u32,
+            b: f32,
+          };
+          alias foo1 = Foo;
+          alias foo2 = foo1;
+          alias foo3 = foo2;
+          @group(0) @binding(1) var<immediate> materials: array<foo3, 10>;
+      `;
+      const reflect = new WgslReflect(shader);
+      test.equals(reflect.aliases.length, 3);
+      test.equals(reflect.immediates[0].type.isStruct, false);
+      test.equals(reflect.immediates[0].type.isArray, true);
+      test.equals(reflect.immediates[0].type.format.isStruct, true);
+      test.equals(reflect.immediates[0].type.format.members.length, 2);
+      test.equals(reflect.immediates[0].type.size, 80);
     });
 
     await test("typedef", function (test) {
@@ -890,7 +910,7 @@ export async function run() {
       const shader = `@group(0) @binding(0) var<storage, read> x : array<f32>;
           @group(0) @binding(1) var<storage, read> y : array<f32>;
           @group(0) @binding(2) var<storage, write> z : array<f32>;
-          
+
           @stage(compute) @workgroup_size(64)
           fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
             // Guard against out-of-bounds work group sizes
@@ -922,7 +942,7 @@ export async function run() {
       const shader = `struct ViewUniforms {
               viewProjection: mat4x4<f32>
           };
-          
+
           struct ModelUniforms {
               model: mat4x4<f32>,
               color: vec4<f32>,
@@ -1351,10 +1371,10 @@ export async function run() {
       const reflect = new WgslReflect(`
       struct ReadonlyStorageBufferBlockName {
         a : f32,
-      }   
+      }
       struct ReadWriteStorageBufferBlockName {
         b : f32,
-      }    
+      }
       @group(3) @binding(1) var<storage, read> readonlyStorageBuffer : ReadonlyStorageBufferBlockName;
       @group(3) @binding(2) var<storage, read_write> readWriteStorageBuffer : ReadWriteStorageBufferBlockName;
       @compute @workgroup_size(1,1,1)
@@ -1389,7 +1409,7 @@ export async function run() {
         fn getU3() -> vec4f {
           return u3;
         }
-        
+
         // resources [u1, u2, u3]
         @vertex fn vs3() -> @builtin(position) vec4f {
           return u1 + u2 + getU3();
@@ -1406,7 +1426,7 @@ export async function run() {
           var u2 = u1;
           return u2 + getU3();
         }
-        
+
         // resources [u1, u2]
         @vertex fn vs6() -> @builtin(position) vec4f {
           {

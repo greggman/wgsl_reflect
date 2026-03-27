@@ -59,9 +59,10 @@ export declare class TemplateInfo extends TypeInfo {
 export declare enum ResourceType {
     Uniform = 0,
     Storage = 1,
-    Texture = 2,
-    Sampler = 3,
-    StorageTexture = 4
+    Immediate = 2,
+    Texture = 3,
+    Sampler = 4,
+    StorageTexture = 5
 }
 export declare class VariableInfo {
     attributes: Attribute[] | null;
