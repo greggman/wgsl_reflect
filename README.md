@@ -32,7 +32,7 @@ class WgslReflect {
   // All top-level storage vars in the shader, including storage buffers and textures.
   storage: Array<VariableInfo>;
   /// All top-level immediate buffer vars in the shader.
-  immediates: VariableInfo[] = [];
+  immediates: Array<VariableInfo>;
   // All top-level texture vars in the shader;
   textures: Array<VariableInfo>;
   // All top-level sampler vars in the shader.
@@ -40,7 +40,7 @@ class WgslReflect {
   // All top-level type aliases in the shader.
   aliases: Array<AliasInfo>;
   // All top-level overrides in the shader.
-  overrides: Array<OverrideInfo> = [];
+  overrides: Array<OverrideInfo>;
   // All top-level structs in the shader.
   structs: Array<StructInfo>;
   // All entry functions in the shader: vertex, fragment, and/or compute.
