@@ -4,9 +4,9 @@ export declare enum TokenClass {
     reserved = 2
 }
 export declare class TokenType {
-    name: string;
-    type: TokenClass;
-    rule: RegExp | string;
+    readonly name: string;
+    readonly type: TokenClass;
+    readonly rule: RegExp | string;
     constructor(name: string, type: TokenClass, rule: RegExp | string);
     toString(): string;
 }
@@ -303,6 +303,7 @@ export declare class WgslScanner {
     _findType(lexeme: string): TokenType;
     _match(lexeme: string, rule: RegExp): boolean;
     _isAtEnd(): boolean;
+    private static readonly _operators;
     _isAlpha(c: string): boolean;
     _isNumeric(c: string): boolean;
     _isAlphaNumeric(c: string): boolean;

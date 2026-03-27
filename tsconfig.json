@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "lib": ["es5", "es6", "dom"],
+    "lib": ["es2016", "es6", "dom"],
     "noEmitHelpers": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

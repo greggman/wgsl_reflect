@@ -5,9 +5,9 @@ export enum TokenClass {
 }
 
 export class TokenType {
-  name: string;
-  type: TokenClass;
-  rule: RegExp | string;
+  readonly name: string;
+  readonly type: TokenClass;
+  readonly rule: RegExp | string;
 
   constructor(name: string, type: TokenClass, rule: RegExp | string) {
     this.name = name;
@@ -571,30 +571,24 @@ export class TokenTypes {
 
 /// A token parsed by the WgslScanner.
 export class Token {
-  readonly type: TokenType; // The type of the token.
-  readonly lexeme: string; // The string of the token, as parsed from the source text.
-  readonly line: number; // The line number of the token in the source text.
-  readonly start: number; // The start position of the token in the source text.
-  readonly end: number; // The end position of the token in the source text.
-
-  constructor(type: TokenType, lexeme: string, line: number, start: number, end: number) {
-    this.type = type;
-    this.lexeme = lexeme;
-    this.line = line;
-    this.start = start;
-    this.end = end;
-  }
+  constructor(
+    readonly type: TokenType,
+    readonly lexeme: string,
+    readonly line: number,
+    readonly start: number,
+    readonly end: number
+  ) {}
 
   toString(): string {
     return this.lexeme;
   }
 
   isTemplateType(): boolean {
-    return TokenTypes.template_types.indexOf(this.type) != -1;
+    return TokenTypes.template_types.includes(this.type);
   }
 
   isArrayType(): boolean {
-    return this.type == TokenTypes.keywords.array;
+    return this.type === TokenTypes.keywords.array;
   }
 
   isArrayOrTemplateType(): boolean {
@@ -754,7 +748,7 @@ export class WgslScanner {
           return true;
         }
         const ti = this._tokens.length - 1;
-        const isIdentOrLiteral = TokenTypes.literal_or_ident.indexOf(this._tokens[ti].type) != -1;
+        const isIdentOrLiteral = TokenTypes.literal_or_ident.includes(this._tokens[ti].type);
         if ((isIdentOrLiteral || this._tokens[ti].type == TokenTypes.tokens.paren_right) && nextLexeme != ">") {
           this._addToken(matchedType);
           return true;
@@ -764,7 +758,7 @@ export class WgslScanner {
         let foundLessThan = false;
         let ti = this._tokens.length - 1;
         for (let count = 0; count < 5 && ti >= 0; ++count, --ti) {
-          if (TokenTypes.assignment_operators.indexOf(this._tokens[ti].type) !== -1) {
+          if (TokenTypes.assignment_operators.includes(this._tokens[ti].type)) {
             break;
           }
           if (this._tokens[ti].type === TokenTypes.tokens.less_than) {
@@ -859,13 +853,14 @@ export class WgslScanner {
     return this._current >= this._source.length;
   }
 
+  private static readonly _operators = new Set([
+    ".", "(", ")", "[", "]", "{", "}", ",", ";", ":", "=", "!",
+    "<", ">", "+", "-", "*", "/", "%", "&", "|", "^", "~", "@",
+    "#", "?", "'", "`", "\"", "\\", "\n", "\r", "\t", "\0"
+  ]);
+
   _isAlpha(c: string): boolean {
-    // To support UTF-8 characters, allow anything other than whitespace, numbers, or operators
-    return !this._isNumeric(c) && !this._isWhitespace(c) && c !== "_" && c !== "." && c !== "(" && c !== ")" &&
-      c !== "[" && c !== "]" && c !== "{" && c !== "}" && c !== "," && c !== ";" && c !== ":" && c !== "=" &&
-      c !== "!" && c !== "<" && c !== ">" && c !== "+" && c !== "-" && c !== "*" && c !== "/" && c !== "%" &&
-      c !== "&" && c !== "|" && c !== "^" && c !== "~" && c !== "@" && c !== "#" && c !== "?" && c !== "'" &&
-      c !== "`" && c !== "\"" && c !== "\\" && c !== "\n" && c !== "\r" && c !== "\t" && c !== "\0";
+    return !this._isNumeric(c) && !this._isWhitespace(c) && c !== "_" && !WgslScanner._operators.has(c);
   }
 
   _isNumeric(c: string): boolean {
@@ -880,16 +875,13 @@ export class WgslScanner {
     return c == " " || c == "\t" || c == "\r";
   }
 
-  _advance(amount: number = 0): string {
-    let c = this._source[this._current];
-    amount = amount || 0;
-    amount++;
-    this._current += amount;
-    return c;
+  _advance(amount = 0): string {
+    const c = this._source[this._current];
+    this._current += amount + 1;
+    return c ?? "\0";
   }
 
-  _peekAhead(offset: number = 0): string {
-    offset = offset || 0;
+  _peekAhead(offset = 0): string {
     if (this._current + offset >= this._source.length) {
       return "\0";
     }
