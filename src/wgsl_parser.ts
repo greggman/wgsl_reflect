@@ -1211,12 +1211,12 @@ export class WgslParser {
 
   _getStruct(name: string): AST.Type | null {
     if (this._context.aliases.has(name)) {
-      const alias = this._context.aliases.get(name).type;
-      return alias;
+      const alias = this._context.aliases.get(name)?.type;
+      return alias ?? null;
     }
     if (this._context.structs.has(name)) {
       const struct = this._context.structs.get(name);
-      return struct;
+      return struct ?? null;
     }
     return null;
   }
@@ -1367,7 +1367,9 @@ export class WgslParser {
       }
       if (this._context.constants.has(name)) {
         const c = this._context.constants.get(name);
-        return this._updateNode(new AST.ConstExpr(name, c.value));
+        if (c) {
+          return this._updateNode(new AST.ConstExpr(name, c.value));
+        }
       }
       return this._updateNode(new AST.VariableExpr(name));
     }
@@ -1833,10 +1835,10 @@ export class WgslParser {
       const type = this._advance();
       const typeName = type.toString();
       if (this._context.structs.has(typeName)) {
-        return this._context.structs.get(typeName);
+        return this._context.structs.get(typeName) ?? null;
       }
       if (this._context.aliases.has(typeName)) {
-        return this._context.aliases.get(typeName).type;
+        return this._context.aliases.get(typeName)?.type ?? null;
       }
 
       const t = this._getType(typeName);
