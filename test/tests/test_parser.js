@@ -786,5 +786,180 @@ let out_of_range = (0x1ffffffff / 8u); // u32 - 20
       test.equals(t[0].value.astNodeType, "createExpr");
       test.equals(t[1].value.astNodeType, "createExpr");
     });
+
+    await test("while loop", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        var i = 0;
+        while (i < 10) {
+          i = i + 1;
+        }
+      }`);
+      test.equals(t.length, 1);
+      test.equals(t[0].body[1].astNodeType, "while");
+    });
+
+    await test("break statement", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        loop {
+          break;
+        }
+      }`);
+      test.equals(t[0].body[0].body[0].astNodeType, "break");
+    });
+
+    await test("continue statement", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        var i = 0;
+        loop {
+          continuing {
+            i = i + 1;
+            break if i >= 4;
+          }
+        }
+      }`);
+      test.equals(t[0].body[1].astNodeType, "loop");
+      test.equals(t[0].body[1].continuing.astNodeType, "continuing");
+    });
+
+    await test("break-if", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        loop {
+          if (condition == true) { break; }
+        }
+      }`);
+      test.equals(t[0].body[0].body[0].condition.astNodeType, "binaryOp");
+    });
+
+    await test("discard", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        discard;
+      }`);
+      test.equals(t[0].body[0].astNodeType, "discard");
+    });
+
+    await test("bitcast", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        var bits: u32 = bitcast<u32>(1.0f);
+      }`);
+      test.equals(t[0].body[0].value.astNodeType, "bitcastExpr");
+    });
+
+    await test("global let", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`let x = 5;`);
+      test.equals(t.length, 1);
+      test.equals(t[0].astNodeType, "let");
+    });
+
+    await test("override with default", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`@id(0) override threshold: f32 = 0.5;`);
+      test.equals(t[0].astNodeType, "override");
+      test.equals(t[0].attributes?.length, 1);
+    });
+
+    await test("pointer types", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test(p: ptr<function, f32>) {
+        var x = *p;
+      }`);
+      test.equals(t[0].args[0].type.astNodeType, "pointer");
+      test.equals(t[0].body[0].value.astNodeType, "unaryOp");
+    });
+
+    await test("atomic types", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`var<workgroup> next_id: atomic<i32>;`);
+      test.equals(t[0].type.name, "atomic");
+    });
+
+    await test("nested struct with arrays", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`struct Inner {
+        data: array<vec4f, 3>
+      }
+      struct Outer {
+        inner: array<Inner, 2>
+      }`);
+      test.equals(t.length, 2);
+      test.equals(t[1].members[0].type.name, "array");
+    });
+
+    await test("return expression", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() -> i32 {
+        return 42;
+      }`);
+      test.equals(t[0].body[0].astNodeType, "return");
+      test.equals(t[0].body[0].value.value.value, 42);
+    });
+
+    await test("underscore assignment", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        _ = 5;
+      }`);
+      test.equals(t[0].body[0].astNodeType, "assign");
+    });
+
+    await test("switch fallthrough", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test(x: i32) {
+        switch(x) {
+          case 0, 1: { }
+          case 2: { fallthrough; }
+          default: { }
+        }
+      }`);
+      test.equals(t[0].body[0].cases.length, 3);
+    });
+
+    await test("function attributes", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`@fragment
+      @builtin(frag_coord)
+      fn test() -> @location(0) f32 {
+        return 1.0;
+      }`);
+      test.equals(t[0].attributes?.length, 2);
+    });
+
+    await test("multiple elseif", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        if (a) {
+        } else if (b) {
+        } else if (c) {
+        } else {
+        }
+      }`);
+      test.equals(t[0].body[0].elseif?.length, 2);
+      test.equals(t[0].body[0].else !== null, true);
+    });
+
+    await test("switch with const selector", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`const FOO = 5;
+      fn test(x: i32) {
+        switch(x) {
+          case FOO: { }
+        }
+      }`);
+      test.equals(t[1].body[0].cases[0].selectors[0].astNodeType, "constExpr");
+    });
+
+    await test("module level discard", async function (test) {
+      const parser = new WgslParser();
+      const t = parser.parse(`fn test() {
+        if (condition) { discard; }
+      }`);
+      test.equals(t[0].body[0].body[0].astNodeType, "discard");
+    });
   });
 }
