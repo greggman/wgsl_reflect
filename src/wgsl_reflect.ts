@@ -6,7 +6,7 @@ export * from "./reflect/info.js";
 export class WgslReflect extends Reflect {
   constructor(code?: string) {
     super();
-    if (code) {
+    if (code !== undefined) {
       this.update(code);
     }
   }

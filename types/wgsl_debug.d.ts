@@ -1,17 +1,22 @@
 import * as AST from "./wgsl_ast.js";
-import { WgslExec } from "./wgsl_exec.js";
 import { ExecContext, FunctionRef } from "./exec/exec_context.js";
 import { Command } from "./exec/command.js";
 import { StackFrame } from "./exec/stack_frame.js";
-import { ExecStack } from "./exec/exec_stack.js";
 type RuntimeStateCallbackType = () => void;
+interface BindingEntry {
+    texture?: {
+        view?: unknown;
+    };
+    descriptor?: unknown;
+    uniform?: ArrayBuffer;
+}
 export declare class WgslDebug {
-    _code: string;
-    _exec: WgslExec;
-    _execStack: ExecStack;
-    _dispatchId: number[];
-    _runTimer: any;
-    breakpoints: Set<number>;
+    private _code;
+    private _exec;
+    private _execStack;
+    private _dispatchId;
+    private _runTimer;
+    readonly breakpoints: Set<number>;
     runStateCallback: RuntimeStateCallbackType | null;
     constructor(code: string, runStateCallback?: RuntimeStateCallbackType);
     getVariableValue(name: string): number | number[] | null;
@@ -25,8 +30,8 @@ export declare class WgslDebug {
     get isRunning(): boolean;
     run(): void;
     pause(): void;
-    _setOverrides(constants: Object, context: ExecContext): void;
-    debugWorkgroup(kernel: string, dispatchId: number[], dispatchCount: number | number[], bindGroups: Object, config?: Object): boolean;
+    _setOverrides(constants: Record<string, unknown>, context: ExecContext): void;
+    debugWorkgroup(kernel: string, dispatchId: number[], dispatchCount: number | number[], bindGroups: Record<string, Record<string, BindingEntry>>, config?: Record<string, unknown>): boolean;
     _shouldExecuteNextCommand(): boolean;
     stepInto(): void;
     stepOver(): void;

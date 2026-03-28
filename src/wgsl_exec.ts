@@ -13,11 +13,38 @@ import { isArray, castScalar, castVector } from "./utils/cast.js";
 import { matrixMultiply, matrixVectorMultiply, vectorMatrixMultiply, MatrixTypeSize, VectorTypeSize } from "./utils/matrix.js";
 
 export class WgslExec extends ExecInterface {
+    private static readonly _numericScalarTypes = new Set(["f32", "i32", "u32", "bool", "f16"]);
+    private static readonly _vectorTypes = new Set([
+        "vec2", "vec3", "vec4",
+        "vec2f", "vec3f", "vec4f",
+        "vec2i", "vec3i", "vec4i",
+        "vec2u", "vec3u", "vec4u",
+        "vec2h", "vec3h", "vec4h",
+        "vec2b", "vec3b", "vec4b"
+    ]);
+    private static readonly _matrixTypes = new Set([
+        "mat2x2", "mat2x3", "mat2x4",
+        "mat3x2", "mat3x3", "mat3x4",
+        "mat4x2", "mat4x3", "mat4x4",
+        "mat2x2f", "mat2x3f", "mat2x4f",
+        "mat3x2f", "mat3x3f", "mat3x4f",
+        "mat4x2f", "mat4x3f", "mat4x4f",
+        "mat2x2h", "mat2x3h", "mat2x4h",
+        "mat3x2h", "mat3x3h", "mat3x4h",
+        "mat4x2h", "mat4x3h", "mat4x4h"
+    ]);
+    private static readonly _defaultableTypes = new Set([
+        ...WgslExec._numericScalarTypes,
+        ...WgslExec._vectorTypes,
+        ...WgslExec._matrixTypes,
+        "array"
+    ]);
+
     ast: Node[];
     context: ExecContext;
     reflection: Reflect;
     builtins: BuiltinFunctions;
-    typeInfo: Object;
+    typeInfo: Record<string, TypeInfo>;
 
     constructor(ast?: Node[], context?: ExecContext) {
         super();
@@ -153,7 +180,7 @@ export class WgslExec extends ExecInterface {
                                 s = attr.value;
                             }
                         }
-                        if (binding == b && set == s) {
+                        if (binding === b && set === s) {
                             let found = false;
                             for (const resource of kernelRefl.resources) {
                                 if (resource.name === v.name && resource.group === parseInt(set) && resource.binding === parseInt(binding)) {
@@ -192,8 +219,8 @@ export class WgslExec extends ExecInterface {
         }
     }
 
-    static _breakObj = new ScalarData(0, new TypeInfo("BREAK", null), null);
-    static _continueObj = new ScalarData(0, new TypeInfo("CONTINUE", null), null);
+    static readonly _breakObj = new ScalarData(0, new TypeInfo("BREAK", null), null);
+    static readonly _continueObj = new ScalarData(0, new TypeInfo("CONTINUE", null), null);
 
     execStatement(stmt: Node, context: ExecContext): Data | null {
         if (stmt instanceof Return) {
@@ -241,12 +268,6 @@ export class WgslExec extends ExecInterface {
             this._increment(stmt, context);
         } else if (stmt instanceof Struct) {
             return null;
-        } else if (stmt instanceof Override) {
-            const name = stmt.name;
-            if (context.getVariable(name) === null) {
-                context.setVariable(name, new ScalarData(0, this.getTypeInfo("u32")));
-                //console.error(`Override constant ${name} not found. Line ${stmt.line}`);
-            }
         } else if (stmt instanceof Call) {
             this._call(stmt, context);
         } else if (stmt instanceof Diagnostic) {
@@ -306,15 +327,9 @@ export class WgslExec extends ExecInterface {
                 if (override.type === null) {
                     override.type = this.getTypeInfo("u32");
                 }
-                if (override.type.name === "u32" || override.type.name === "i32" || override.type.name === "f32" || override.type.name === "f16") {
+                if (WgslExec._numericScalarTypes.has(override.type.name)) {
                     context.setVariable(k, new ScalarData(v, override.type));
-                } else if (override.type.name === "bool") {
-                    context.setVariable(k, new ScalarData(v ? 1 : 0, override.type));
-                } else if (override.type.name === "vec2" || override.type.name === "vec3" || override.type.name === "vec4" ||
-                    override.type.name === "vec2f" || override.type.name === "vec3f" || override.type.name === "vec4f" ||
-                    override.type.name === "vec2i" || override.type.name === "vec3i" || override.type.name === "vec4i" ||
-                    override.type.name === "vec2u" || override.type.name === "vec3u" || override.type.name === "vec4u" ||
-                    override.type.name === "vec2h" || override.type.name === "vec3h" || override.type.name === "vec4h") {
+                } else if (WgslExec._vectorTypes.has(override.type.name)) {
                     context.setVariable(k, new VectorData(v, override.type));
                 } else {
                     console.error(`Invalid constant type for ${k}`);
@@ -418,7 +433,7 @@ export class WgslExec extends ExecInterface {
     _execStatements(statements: Node[], context: ExecContext): Data | null {
         for (const stmt of statements) {
             // Block statements are declared as arrays of statements.
-            if (stmt instanceof Array) {
+            if (Array.isArray(stmt)) {
                 const subContext = context.clone();
                 const res = this._execStatements(stmt, subContext);
                 if (res) {
@@ -961,7 +976,6 @@ export class WgslExec extends ExecInterface {
             } else {
                 console.error(`Invalid assignment to ${name}. Line ${node.line}`);
             }
-            //v.value = value;
         }
         return;
     }
@@ -1004,24 +1018,7 @@ export class WgslExec extends ExecInterface {
             }
         } else {
             const typeName = node.type.name;
-            if (typeName === "f32" || typeName === "i32" || typeName === "u32" ||
-                typeName === "bool" || typeName === "f16" ||
-                typeName === "vec2" || typeName === "vec3" || typeName === "vec4" ||
-                typeName === "vec2f" || typeName === "vec3f" || typeName === "vec4f" ||
-                typeName === "vec2i" || typeName === "vec3i" || typeName === "vec4i" ||
-                typeName === "vec2u" || typeName === "vec3u" || typeName === "vec4u" ||
-                typeName === "vec2h" || typeName === "vec3h" || typeName === "vec4h" ||
-                typeName === "vec2b" || typeName === "vec3b" || typeName === "vec4b" ||
-                typeName === "mat2x2" || typeName === "mat2x3" || typeName === "mat2x4" ||
-                typeName === "mat3x2" || typeName === "mat3x3" || typeName === "mat3x4" ||
-                typeName === "mat4x2" || typeName === "mat4x3" || typeName === "mat4x4" ||
-                typeName === "mat2x2f" || typeName === "mat2x3f" || typeName === "mat2x4f" ||
-                typeName === "mat3x2f" || typeName === "mat3x3f" || typeName === "mat3x4f" ||
-                typeName === "mat4x2f" || typeName === "mat4x3f" || typeName === "mat4x4f" ||
-                typeName === "mat2x2h" || typeName === "mat2x3h" || typeName === "mat2x4h" ||
-                typeName === "mat3x2h" || typeName === "mat3x3h" || typeName === "mat3x4h" ||
-                typeName === "mat4x2h" || typeName === "mat4x3h" || typeName === "mat4x4h" ||
-                typeName === "array") {
+            if (WgslExec._defaultableTypes.has(typeName)) {
                 const defType = new CreateExpr(node.type, []);
                 value = this._evalCreate(defType, context);
             }
@@ -1047,23 +1044,7 @@ export class WgslExec extends ExecInterface {
             }
 
             const typeName = node.type.name;
-            if (typeName === "f32" || typeName === "i32" || typeName === "u32" ||
-                typeName === "bool" || typeName === "f16" ||
-                typeName === "vec2" || typeName === "vec3" || typeName === "vec4" ||
-                typeName === "vec2f" || typeName === "vec3f" || typeName === "vec4f" ||
-                typeName === "vec2i" || typeName === "vec3i" || typeName === "vec4i" ||
-                typeName === "vec2u" || typeName === "vec3u" || typeName === "vec4u" ||
-                typeName === "vec2h" || typeName === "vec3h" || typeName === "vec4h" ||
-                typeName === "vec2b" || typeName === "vec3b" || typeName === "vec4b" ||
-                typeName === "mat2x2" || typeName === "mat2x3" || typeName === "mat2x4" ||
-                typeName === "mat3x2" || typeName === "mat3x3" || typeName === "mat3x4" ||
-                typeName === "mat4x2" || typeName === "mat4x3" || typeName === "mat4x4" ||
-                typeName === "mat2x2f" || typeName === "mat2x3f" || typeName === "mat2x4f" ||
-                typeName === "mat3x2f" || typeName === "mat3x3f" || typeName === "mat3x4f" ||
-                typeName === "mat4x2f" || typeName === "mat4x3f" || typeName === "mat4x4f" ||
-                typeName === "mat2x2h" || typeName === "mat2x3h" || typeName === "mat2x4h" ||
-                typeName === "mat3x2h" || typeName === "mat3x3h" || typeName === "mat3x4h" ||
-                typeName === "mat4x2h" || typeName === "mat4x3h" || typeName === "mat4x4h" ||
+            if (WgslExec._defaultableTypes.has(typeName) ||
                 node.type instanceof ArrayType || node.type instanceof Struct || node.type instanceof TemplateType) {
                 const defType = new CreateExpr(node.type, []);
                 value = this._evalCreate(defType, context);
@@ -1881,12 +1862,12 @@ export class WgslExec extends ExecInterface {
                 } else if (isArray(l)) {
                     const la = l as number[];
                     const rn = r as number;
-                    const result = la.map((x: number, i: number) => x == rn ? 1 : 0);
+                    const result = la.map((x: number, i: number) => x === rn ? 1 : 0);
                     return new VectorData(result, _l.typeInfo);
                 } else if (isArray(r)) {
                     const ln = l as number;
                     const ra = r as number[];
-                    const result = ra.map((x: number, i: number) => ln == x ? 1 : 0);
+                    const result = ra.map((x: number, i: number) => ln === x ? 1 : 0);
                     return new VectorData(result, _r.typeInfo);
                 }
                 const ln = l as number;

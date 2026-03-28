@@ -10,13 +10,19 @@ import { ScalarData, VectorData, MatrixData, TextureData, TypedData, VoidData, A
 
 type RuntimeStateCallbackType = () => void;
 
+interface BindingEntry {
+    texture?: { view?: unknown };
+    descriptor?: unknown;
+    uniform?: ArrayBuffer;
+}
+
 export class WgslDebug {
-    _code: string;
-    _exec: WgslExec;
-    _execStack: ExecStack;
-    _dispatchId: number[];
-    _runTimer: any = null;
-    breakpoints: Set<number> = new Set();
+    private _code: string;
+    private _exec: WgslExec;
+    private _execStack: ExecStack;
+    private _dispatchId: number[];
+    private _runTimer: ReturnType<typeof setInterval> | null = null;
+    readonly breakpoints: Set<number> = new Set();
     runStateCallback: RuntimeStateCallbackType | null = null;
 
     constructor(code: string, runStateCallback?: RuntimeStateCallbackType) {
@@ -24,7 +30,7 @@ export class WgslDebug {
         const parser = new WgslParser();
         const ast = parser.parse(code);
         this._exec = new WgslExec(ast);
-        this.runStateCallback = runStateCallback ?? null
+        this.runStateCallback = runStateCallback ?? null;
     }
 
     getVariableValue(name: string): number | number[] | null {
@@ -116,7 +122,7 @@ export class WgslDebug {
         }
     }
 
-    toggleBreakpoint(line: number) {
+    toggleBreakpoint(line: number): void {
         if (this.breakpoints.has(line)) {
             this.breakpoints.delete(line);
         } else {
@@ -124,15 +130,15 @@ export class WgslDebug {
         }
     }
 
-    clearBreakpoints() {
+    clearBreakpoints(): void {
         this.breakpoints.clear();
     }
 
-    get isRunning() {
+    get isRunning(): boolean {
         return this._runTimer !== null;
     }
 
-    run() {
+    run(): void {
         if (this.isRunning) {
             return;
         }
@@ -161,7 +167,7 @@ export class WgslDebug {
         }
     }
 
-    pause() {
+    pause(): void {
         if (this._runTimer !== null) {
             clearInterval(this._runTimer);
             this._runTimer = null;
@@ -171,7 +177,7 @@ export class WgslDebug {
         }
     }
 
-    _setOverrides(constants: Object, context: ExecContext): void {
+    _setOverrides(constants: Record<string, unknown>, context: ExecContext): void {
         for (const k in constants) {
             const v = constants[k];
             const override = this._exec.reflection.getOverrideInfo(k);
@@ -180,7 +186,7 @@ export class WgslDebug {
                     override.type = this._exec.getTypeInfo("u32");
                 }
                 if (override.type.name === "u32" || override.type.name === "i32" || override.type.name === "f32" || override.type.name === "f16") {
-                    context.setVariable(k, new ScalarData(v, override.type));
+                    context.setVariable(k, new ScalarData(v as number, override.type));
                 } else if (override.type.name === "bool") {
                     context.setVariable(k, new ScalarData(v ? 1 : 0, override.type));
                 } else if (override.type.name === "vec2" || override.type.name === "vec3" || override.type.name === "vec4" ||
@@ -188,7 +194,7 @@ export class WgslDebug {
                     override.type.name === "vec2i" || override.type.name === "vec3i" || override.type.name === "vec4i" ||
                     override.type.name === "vec2u" || override.type.name === "vec3u" || override.type.name === "vec4u" ||
                     override.type.name === "vec2h" || override.type.name === "vec3h" || override.type.name === "vec4h") {
-                    context.setVariable(k, new VectorData(v, override.type));
+                    context.setVariable(k, new VectorData(v as number[], override.type));
                 } else {
                     console.error(`Invalid constant type for ${k}`);
                 }
@@ -199,7 +205,7 @@ export class WgslDebug {
     }
 
     debugWorkgroup(kernel: string, dispatchId: number[], 
-        dispatchCount: number | number[], bindGroups: Object, config?: Object): boolean {
+        dispatchCount: number | number[], bindGroups: Record<string, Record<string, BindingEntry>>, config?: Record<string, unknown>): boolean {
 
         this._execStack = new ExecStack();
 
@@ -209,8 +215,9 @@ export class WgslDebug {
         this._dispatchId = dispatchId;
 
         config = config ?? {};
-        if (config["constants"]) {
-            this._setOverrides(config["constants"], context);
+        const constants = config["constants"] as Record<string, number> | undefined;
+        if (constants) {
+            this._setOverrides(constants, context);
         }
 
         // Use this to debug the top level statements, otherwise call _execStatements.
@@ -265,7 +272,7 @@ export class WgslDebug {
                                 s = attr.value;
                             }
                         }
-                        if (binding == b && set == s) {
+                        if (binding === b && set === s) {
                             let found = false;
                             for (const resource of kernelRefl.resources) {
                                 if (resource.name === v.name && resource.group === parseInt(set) && resource.binding === parseInt(binding)) {
@@ -276,23 +283,18 @@ export class WgslDebug {
                             if (found) {
                                 const typeInfo = this._exec.getTypeInfo(node.type);
                                 if (entry.texture !== undefined && entry.descriptor !== undefined) {
-                                    // Texture
-                                    v.value = new TextureData(entry.texture, typeInfo, entry.descriptor,
-                                        entry.texture.view ?? null);
+                                    v.value = new TextureData([entry.texture as unknown as ArrayBuffer], typeInfo, entry.descriptor as unknown,
+                                        (entry.texture as unknown as { view?: unknown }).view ?? null);
                                 } else if (entry.uniform !== undefined) {
-                                    // Uniform buffer
                                     v.value = new TypedData(entry.uniform, typeInfo);
                                 } else {
                                     if (typeInfo.isStruct || typeInfo.isArray) {
-                                        // Storage buffer
-                                        v.value = new TypedData(entry, typeInfo);
+                                        v.value = new TypedData(entry as unknown as ArrayBuffer, typeInfo);
                                     } else {
-                                        // all other types
-                                        // trashy, create an array size one and pull the first element, couldn't find a better way to support a ton of types.
                                         const arrayType = new ArrayType(`array<${node.type.name}>`, [], node.type, 1)
                                         let i32 = this._exec.getTypeInfo('i32');
                                         const index = new AST.ArrayIndex(new AST.LiteralExpr(new ScalarData(new Int32Array([0]), i32), AST.Type.u32));
-                                        v.value = new TypedData(entry, this._exec.getTypeInfo(arrayType)).getSubData(new WgslExec(), index, null);
+                                        v.value = new TypedData(entry as unknown as ArrayBuffer, this._exec.getTypeInfo(arrayType)).getSubData(this._exec, index, null);
                                     }
                                 }
                             }
@@ -333,21 +335,21 @@ export class WgslDebug {
         return false;
     }
 
-    stepInto() {
+    stepInto(): void {
         if (this.isRunning) {
             return;
         }
         this.stepNext(true);
     }
 
-    stepOver() {
+    stepOver(): void {
         if (this.isRunning) {
             return;
         }
         this.stepNext(false);
     }
 
-    stepOut() {
+    stepOut(): void {
         const state = this.currentState;
         if (state === null) {
             return;
