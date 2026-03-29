@@ -1752,6 +1752,20 @@ export abstract class Data {
   }
 }
 
+export class ControlData extends Data {
+  constructor(typeInfo: TypeInfo, parent: Data | null) {
+      super(typeInfo, parent);
+  }
+
+  clone(): Data {
+    return this;
+  }
+
+  toString(): string {
+      return this.typeInfo.name;
+  }
+}
+
 export class VoidData extends Data {
   constructor() {
       super(new TypeInfo("void", null), null);

@@ -744,6 +744,11 @@ export declare abstract class Data {
     getSubData(exec: ExecInterface, postfix: Expression | null, context: ExecContext): Data | null;
     toString(): string;
 }
+export declare class ControlData extends Data {
+    constructor(typeInfo: TypeInfo, parent: Data | null);
+    clone(): Data;
+    toString(): string;
+}
 export declare class VoidData extends Data {
     constructor();
     static readonly void: VoidData;

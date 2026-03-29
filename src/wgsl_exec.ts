@@ -3,7 +3,7 @@ import { Node, Type, TemplateType, Return, Break, Continue, Let, Var, Const,
     Call, Diagnostic, Alias, BinaryOperator, LiteralExpr, Expression,
     VariableExpr, CallExpr, CreateExpr, ConstExpr, BitcastExpr, UnaryOperator,
     ArrayIndex, StringExpr, Function, Switch, SwitchCase, Case, Default, DefaultSelector } from "./wgsl_ast.js";
-import { Data, TypedData, TextureData, ScalarData, VectorData, MatrixData, PointerData, VoidData } from "./wgsl_ast.js";
+import { Data, TypedData, TextureData, ScalarData, VectorData, MatrixData, PointerData, VoidData, ControlData } from "./wgsl_ast.js";
 import { Reflect } from "./reflect/reflect.js";
 import { TypeInfo, StructInfo, ArrayInfo, TemplateInfo } from "./reflect/info.js";
 import { ExecContext, FunctionRef } from "./exec/exec_context.js";
@@ -219,8 +219,8 @@ export class WgslExec extends ExecInterface {
         }
     }
 
-    static readonly _breakObj = new ScalarData(0, new TypeInfo("BREAK", null), null);
-    static readonly _continueObj = new ScalarData(0, new TypeInfo("CONTINUE", null), null);
+    static readonly _breakObj = new ControlData(new TypeInfo("BREAK", null), null);
+    static readonly _continueObj = new ControlData(new TypeInfo("CONTINUE", null), null);
 
     execStatement(stmt: Node, context: ExecContext): Data | null {
         if (stmt instanceof Return) {
